@@ -1,0 +1,146 @@
+#include <stdio.h>
+#include <iostream>
+#include<iomanip>
+
+#include<algorithm>
+
+#include<string>
+#include<vector>
+#include<set>
+#include <queue>
+using namespace std;
+
+#define forn(i, n) for(int i = 0; i < int(n); ++i)
+#define sz(a) int(a.size())
+#define mp make_pair
+
+typedef long long li;
+
+const int MOD = int(1e9) + 7;
+const int MOD2 = 1000000009;
+const int INF = 1e9;
+const int N = int(3e5) + 7;
+
+struct node {
+	int sum;
+	node * l;
+	node * r;
+
+	node(int x) {
+		this->sum = x;
+	}
+};
+int a[N], b[N];
+
+node* build(int l, int r) {
+	if (l == r) {
+		node *t = new node(a[r]);
+		return t;
+	}
+	int mid = (l + r) / 2;
+	node* left = build(l, mid);
+	node* right = build(mid + 1, r);
+	node* t = new node(left->sum + right->sum);
+	t->l = left;
+	t->r = right;
+	return t;
+}
+node * upd(node * t, int l, int r, int pos, int x) {
+	if (l == r) {
+		node* nt = new node(x);
+		return nt;
+	}
+	int mid = (l + r) / 2;
+	if (pos <= mid) {
+		node* left = upd(t->l, l, mid, pos, x);
+		node* nt = new node(left->sum + t->r->sum);
+		nt->r = t->r;
+		nt->l = left;
+		return nt;
+	}
+	else {
+		node* right = upd(t->r, mid + 1, r, pos, x);
+		node* nt = new node(t->l->sum + right->sum);
+		nt->l = t->l;
+		nt->r = right;
+		return nt;
+	}
+}
+int R(node* t, int l, int r, int x) {
+	if (l == r) {
+		return r;
+	}
+	int mid = (l + r) / 2;
+	if (t->l->sum >= x) {
+		return R(t->l, l, mid, x);
+	}
+	else {
+		return R(t->r, mid + 1, r, x - t->l->sum);
+	}
+}
+
+int re[N], last[N];
+
+node * mi[N];
+void solve() {
+	int n, m;
+	scanf("%d %d", &n, &m);
+	for (int i = 0; i < N; i++) {
+		re[i] = -1;
+		last[i] = -1;
+		a[i] = 0;
+	}
+	for (int i = 0; i < n; i++) {
+		scanf("%d", &b[i]);
+	}
+	for (int i = 0; i < n; i++) {
+		if (last[b[i]] == -1) {
+			a[i] = 1;
+		}
+		else {
+			re[last[b[i]]] = i;
+		}
+		last[b[i]] = i;
+	}
+
+	mi[0] = build(0, n - 1);
+
+	for (int i = 0; i < n; i++) {
+		node *t = upd(mi[i], 0, n - 1, i, 0);
+		mi[i + 1] = t;
+
+		if (re[i] != -1) {
+			mi[i + 1] = upd(t, 0, n - 1, re[i], 1);
+		}
+	}
+
+	int q;
+	scanf("%d", &q);
+	int p = 0;
+	for (int j = 0; j < q; j++) {
+		int x, y;
+		scanf("%d %d", &x, &y);
+		int l = ((x + p) % n);
+		int k = ((y + p) % m + 1);
+
+		if (mi[l]->sum >= k) {
+			p = R(mi[l], 0, n - 1, k) + 1;
+		}
+		else {
+			p = 0;
+		}
+		printf("%d\n", p);
+	}
+}
+
+int main() {
+	freopen("rollback.in", "r", stdin);
+	freopen("rollback.out", "w", stdout);
+//	freopen("input.txt", "r", stdin);
+//	freopen("output.txt", "w", stdout);
+	cout << setprecision(15) << fixed;
+
+	solve();
+
+	return 0;
+}

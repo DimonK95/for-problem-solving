@@ -1,0 +1,151 @@
+#include <iostream>
+#include<iomanip>
+
+#include<algorithm>
+
+#include<string>
+#include<vector>
+#include<set>
+#include <queue>
+using namespace std;
+
+#define forn(i, n) for(int i = 0; i < int(n); ++i)
+#define sz(a) int(a.size())
+#define mp make_pair
+
+typedef long long li;
+
+const int MOD = int(1e9) + 7;
+const int MOD2 = 1000000009;
+const int INF = 1e9;
+const int N = int(8e6) + 7;
+
+struct node {
+	int sum;
+	int l;
+	int r;
+
+	node(int x) {
+		this->sum = x;
+	}
+	node() {
+		sum = 0;
+	}
+};
+int a[N], b[N];
+
+node nodes[N];
+int nodeCount = 0;
+
+int build(int l, int r) {
+	if (l == r) {
+		nodes[nodeCount] = node(a[r]);
+		return nodeCount++;
+	}
+	int mid = (l + r) >> 1;
+	int left = build(l, mid);
+	int right = build(mid + 1, r);
+	nodes[nodeCount] = node(nodes[left].sum + nodes[right].sum);
+	nodes[nodeCount].l = left;
+	nodes[nodeCount].r = right;
+	return nodeCount++;
+}
+int upd(int t, int l, int r, int pos, int x) {
+	if (l == r) {
+		nodes[nodeCount] = node(x);
+		return nodeCount++;
+	}
+	int mid = (l + r) >> 1;
+	if (pos <= mid) {
+		int left = upd(nodes[t].l, l, mid, pos, x);
+		nodes[nodeCount] = node(nodes[left].sum + nodes[nodes[t].r].sum);
+		nodes[nodeCount].r = nodes[t].r;
+		nodes[nodeCount].l = left;
+		return nodeCount++;
+	}
+	else {
+		int right = upd(nodes[t].r, mid + 1, r, pos, x);
+		nodes[nodeCount] = node(nodes[nodes[t].l].sum + nodes[right].sum);
+		nodes[nodeCount].l = nodes[t].l;
+		nodes[nodeCount].r = right;
+		return nodeCount++;
+	}
+}
+int R(int t, int l, int r, int x) {
+	if (l == r) {
+		return r;
+	}
+	int mid = (l + r) >> 1;
+	if (nodes[nodes[t].l].sum >= x) {
+		return R(nodes[t].l, l, mid, x);
+	}
+	else {
+		return R(nodes[t].r, mid + 1, r, x - nodes[nodes[t].l].sum);
+	}
+}
+
+int re[N], last[N];
+
+int mi[N];
+void solve() {
+	int n, m;
+	scanf("%d %d", &n, &m);
+	for (int i = 0; i < N; i++) {
+		re[i] = -1;
+		last[i] = -1;
+		a[i] = 0;
+	}
+	for (int i = 0; i < n; i++) {
+		scanf("%d", &b[i]);
+	}
+	for (int i = 0; i < n; i++) {
+		if (last[b[i]] == -1) {
+			a[i] = 1;
+		}
+		else {
+			re[last[b[i]]] = i;
+		}
+		last[b[i]] = i;
+	}
+
+	mi[0] = build(0, n - 1);
+
+	for (int i = 0; i < n; i++) {
+		int t = upd(mi[i], 0, n - 1, i, 0);
+		mi[i + 1] = t;
+
+		if (re[i] != -1) {
+			mi[i + 1] = upd(t, 0, n - 1, re[i], 1);
+		}
+	}
+
+	int q;
+	scanf("%d", &q);
+	int p = 0;
+	for (int j = 0; j < q; j++) {
+		int x, y;
+		scanf("%d %d", &x, &y);
+		int l = ((x + p) % n);
+		int k = ((y + p) % m + 1);
+
+		if (nodes[mi[l]].sum >= k) {
+			p = R(mi[l], 0, n - 1, k) + 1;
+		}
+		else {
+			p = 0;
+		}
+		printf("%d\n", p);
+	}
+}
+
+int main() {
+	freopen("rollback.in", "r", stdin);
+	freopen("rollback.out", "w", stdout);
+	//freopen("input.txt", "r", stdin);
+	//freopen("output.txt", "w", stdout);
+	cout << setprecision(15) << fixed;
+
+	solve();
+
+	return 0;
+}

@@ -1,0 +1,137 @@
+#include <iostream>
+#include <vector>
+#include <numeric>
+#include <algorithm>
+#include <queue>
+#include <string>
+#include <sstream>
+#include <set>
+#include <assert.h>
+#include <map>
+#include <string.h>
+using namespace std;
+
+const int N = 204;
+const int INF = 1e9 + 7;
+int n;
+int a[N];
+const int K = 1005;
+int dp[N];
+
+
+struct edge {
+	int from, to, cost, cap, flow;
+
+	edge(int f, int t, int c, int ca, int fl) :
+		from(f), to(t), cost(c), cap(ca), flow(fl) {};
+};
+
+vector<edge> edges;
+vector<int> g[N];
+
+
+void add_edge(int i, int j, int cost, int cap) {
+	g[i].push_back(edges.size());
+	edges.push_back(edge(i, j, cost, cap, 0));
+	g[j].push_back(edges.size());
+	edges.push_back(edge(j, i, -cost, 0, 0));
+}
+bool inq[N];
+int dist[N];
+int p[N];
+int mcmf(int S, int T, int need) {
+	int flow = 0, cost = 0;
+	while (flow < need) {
+		for (int i = 0; i < N; i++) {
+			dist[i] = INF;
+			p[i] = -1;
+			inq[i] = false;
+		}
+		queue<int> q;
+		inq[S] = true;
+		q.push(S);
+		dist[S] = 0;
+		while (!q.empty()) {
+			int u = q.front();
+			inq[u] = false;
+			q.pop();
+			for (int i = 0; i < g[u].size(); i++) {
+				int e = g[u][i];
+				int to = edges[e].to;
+				if (edges[e].flow + 1 <= edges[e].cap && dist[to] > dist[u] + edges[e].cost) {
+					dist[to] = dist[u] + edges[e].cost;
+					p[to] = e;
+					if (!inq[to]) {
+						q.push(to);
+						inq[to] = true;
+					}
+				}
+			}
+		}
+		int idx = p[T];
+		vector <int> pa;
+		while (idx != -1) {
+			edges[idx].flow++;
+			edges[idx ^ 1].flow--;
+			pa.push_back(edges[idx].to);
+			idx = p[edges[idx].from];
+		}
+		reverse(pa.begin(), pa.end());
+		flow++;
+	}
+	//cout << flow << endl;
+}
+
+int main() {
+   freopen("teams.in", "r", stdin);
+	freopen("teams.out", "w", stdout);
+#if _DEBUG
+	freopen("input.txt", "r", stdin);
+	freopen("output.txt", "w", stdout);
+#endif	
+	int n;
+	cin >> n;
+	for (int i = 0; i < 2 * n; i++) {
+		cin >> a[i];
+		a[i]--;
+	}
+	for (int place = 0; place < n; place++) {
+		for (int i = 0; i < n; i++) {
+			int place2 = place + n;
+
+			bool f = false;
+			int dist = 0;
+			for (int j = 0; j < 2 * n; j++) {
+				if (a[j] == i){
+					if (!f) {
+						dist += abs(place - j);
+						f = true;
+					}
+					else {
+						dist += abs(place2 - j);
+					}
+				}
+			}
+
+			add_edge(place, n + i, dist, 1);
+		}
+	}
+	for (int place = 0; place < n; place++) {
+		add_edge(2 * n + 1, place, 0, 1);
+		add_edge(n + place, 2 * n + 2, 0, 1);
+	}
+	mcmf(2 * n + 1, 2 * n + 2, n);
+	vector <int> ans(2 * n);
+	for (int i = 0; i < edges.size(); i+=2) {
+		//cout << edges[i].from << " " << edges[i].to << " " <<  edges[i].flow << endl;
+		//cout << i << endl;
+		if (edges[i].flow == 1 && edges[i].from < n) {
+			ans[edges[i].from] = edges[i].to - n;
+			ans[edges[i].from + n] = edges[i].to - n;
+		}
+	}
+
+	for (int i = 0; i < 2 * n; i++) {
+		cout << ans[i] + 1 << " ";
+	}
+}

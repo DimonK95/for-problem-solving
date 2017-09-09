@@ -1,0 +1,63 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <cmath>
+#include <cstdio>
+#include <string>
+#include <vector>
+#include <iostream>
+#include <algorithm>
+#include <set>
+#include <map>
+using namespace std;
+
+const int N = 500001;
+
+int len[N];
+int sufflink[N];
+int to[N][26];
+int numV;
+int num[N];
+
+void init(){
+	memset(to, -1, sizeof(to));
+	sufflink[1] = sufflink[0] = 0;
+	len[0] = -1;
+	len[1] = 0;
+	numV = 2;
+}
+
+string s;
+int v;
+
+void add(int idx){
+
+	while (s[idx - len[v] - 1] != s[idx]){
+		v = sufflink[v];
+	}
+	int u = sufflink[v];
+	while (s[idx - len[u] - 1] != s[idx]){
+		u = sufflink[u];
+	}
+	int v_ = to[v][s[idx] - 'a'];
+	int u_ = to[u][s[idx] - 'a'];
+
+	if (v_ == -1){
+		v_ = to[v][s[idx] - 'a'] = numV++;
+		len[v_] = len[v] + 2;
+		sufflink[v_] = (len[v_] == 1) ? 1 : u_;
+                num[v_] = 1 + num[sufflink[v_]];
+	}
+	v = v_;
+}
+
+int main() {
+	cin >> s;
+	init();
+	long long ans = 0;
+	for (int i = 0; i < s.length(); i++){
+		add(i);
+		ans += num[v];
+	}
+	cout << ans - s.length();
+	return 0;
+}
+-------------

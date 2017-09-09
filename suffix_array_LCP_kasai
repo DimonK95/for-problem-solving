@@ -1,0 +1,244 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <string>
+#include <set>
+#include <numeric>
+#include <string.h>
+#include <map>
+#include <time.h>
+#include <assert.h>
+using namespace std;
+
+#define mp make_pair
+#define pb push_back
+
+const int N = 2e5 + 5;
+const int INF = 1e8 + 5;
+typedef long long li;
+
+
+const int K = 20;
+int p[N], np[N];
+int c[N][K];
+int b[N];
+int n;
+int h;
+int s[N];
+
+int cmp(int i, int j) {
+	if (h == 0)
+		return s[i] < s[j];
+	if (c[i][h - 1] != c[j][h - 1])
+		return c[i][h - 1] < c[j][h - 1];
+	i += (1 << (h - 1));
+	j += (1 << (h - 1));
+
+	assert(i < n && j < n);
+	return c[i][h - 1] < c[j][h - 1];
+}
+
+void sa() {
+	iota(p, p + n, 0);
+	for (h = 0; ; h++) {
+		sort(p, p + n, cmp);
+		c[p[0]][h] = 0;
+		for (int j = 1; j < n; j++) {
+			c[p[j]][h] = c[p[j - 1]][h] + cmp(p[j - 1], p[j]);
+		}
+		if (c[p[n - 1]][h] == n - 1) break;
+	}
+}
+
+
+int pos[N];
+int lcp[N];
+void kasai(){
+	memset(lcp, 0, sizeof lcp);
+	for (int i = 0; i < n; i++) {
+		pos[p[i]] = i;
+	}
+	int k = 0;
+	for (int i = 0; i < n; i++) {
+		if (k) k--;
+		if (pos[i] == n - 1) {
+			k = 0;
+			lcp[pos[i]] = k;
+		}
+		else {
+			int j = p[pos[i] + 1];
+			while (i + k < n && j + k < n && s[i + k] == s[j + k]) k++;
+			lcp[pos[i]] = k;
+		}
+	}
+}
+int st[N][K];
+int lg[N];
+void sparce_table() {
+	for (int i = 0; i < K; i++){
+		for (int j = (1 << i); j < min(N, (1 << (i + 1))); j++) {
+			lg[j] = i;
+		}
+	}
+	for (int k = 0; k < K; k++) {
+		for (int i = 0; i < n; i++) {
+			if (k == 0) {
+				st[i][k] = lcp[i];
+			}
+			else {
+				st[i][k] = st[i][k - 1];
+				int ni = i + (1 << (k - 1));
+				if (ni < n)
+					st[i][k] = min(st[i][k], st[ni][k - 1]);
+			}
+		}
+	}
+}
+
+inline int get_lcp(int i, int j) {
+	j--;	
+	assert(i <= j);
+	int ln = lg[j - i + 1];
+	return min(st[i][ln], st[j - (1 << ln) + 1][ln]);
+}
+int place[N];
+int diff[N];
+int gra[N];
+int mxlen[N];
+
+void print() {
+	for (int i = 0; i < n; i++) {
+		cout << place[p[i]] << " ";
+		for (int j = p[i]; j < n; j++) {
+			cout << char(s[j] + 'a');
+		}
+		cout << endl;
+	}
+}
+
+li ans[N];
+
+bool can(int len, int idx) {
+
+	int L = idx, R = idx;
+
+	int l, r;
+
+	l = 0; r = idx - 1;
+	while (r - l > 1) {
+		int mid = (l + r) >> 1;
+		if (get_lcp(mid, idx) >= len) r = mid;
+		else l = mid;
+	}
+	for (int j = l; j <= r; j++) {
+		if (get_lcp(j, idx) >= len) {
+			L = j;
+			break;
+		}
+	}
+	l = idx + 1; r = n - 1;
+	while (r - l > 1) {
+		int mid = (l + r) >> 1;
+		if (get_lcp(idx, mid) >= len) l = mid;
+		else r = mid;
+	}
+	for (int j = l; j <= r; j++) {
+		if (get_lcp(idx, j) >= len) {
+			R = j;
+		}
+	}
+
+	//cout << " L = " << L << " R = " << R << endl;
+	return (R >= gra[L]);
+}
+
+int main() {
+#if _DEBUG
+	freopen("input.txt", "r", stdin);
+	freopen("output.txt", "w", stdout);
+
+#endif
+	srand(time(NULL));
+	cout.sync_with_stdio(false);
+	cin.tie(0);
+	int m, k;
+	cin >> m >> k;
+
+	int em = -5;
+	for (int i = 0; i < m; i++) {
+		string text;
+		cin >> text;
+		int oldn = n;
+		for (int j = 0; j < text.size(); j++) {
+			s[n++] = text[j] - 'a';
+		}
+		s[n++] = em--;
+		for (int j = oldn; j < n; j++) {
+			place[j] = i;
+		}
+		int can = 0;
+		for (int j = n - 1; j >= oldn; j--) {
+			mxlen[j] = can;
+			can++;
+		}
+	}
+
+	sa();
+	kasai();
+	sparce_table();
+	
+	//print();
+
+	int j = 0;
+	int cntdiff = 0;
+	for (int i = 0; i < n; i++) {
+		while (j < n && cntdiff < k) {
+			diff[place[p[j]]]++;
+			if (diff[place[p[j]]] == 1)
+				cntdiff++;
+			j++;
+		}
+		gra[i] = INF;
+		if (cntdiff >= k) {
+			gra[i] = j - 1;
+		}
+		//cout << i << " " << gra[i] << endl;
+		diff[place[p[i]]]--;
+		if (diff[place[p[i]]] == 0)
+			cntdiff--;
+	}
+	
+	//cout << n << endl;
+
+	for (int i = 0; i < n; i++) {
+		
+		int l = 1;
+		int r = mxlen[p[i]];
+
+		//cout <<"mi" <<  l << " " << r << endl;
+
+		while (r - l > 1) {
+			int mid = (l + r) >> 1;
+			if (can(mid, i)) l = mid;
+			else r = mid;
+		}
+
+		int nl = -1;
+		for (int j = r; j >= l; j--) {
+			if (can(j, i)){
+				nl = j;
+				break;
+			}
+		}
+
+		
+		if (nl != -1) {
+			ans[place[p[i]]] += nl;
+		}
+	}
+
+	for (int i = 0; i < m; i++) {
+		cout << ans[i] << " ";
+	}
+	return 0;
+}

@@ -1,0 +1,136 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <string>
+#include <set>
+#include <map>
+#include <queue>
+#include <time.h>
+#include <stack>
+#include <assert.h>
+using namespace std;
+
+#define mp make_pair
+#define pb push_back
+
+const int INF = 1e8 + 5;
+typedef long long li;
+
+int dx[] = { -1,1,0,0 };
+int dy[] = { 0,0,1,-1 };
+int n, m;
+const int N = 2e6 + 5;
+string s;
+
+int len[N];
+int numV;
+int v;
+int sufflink[N];
+int quicklink[N];
+int to[N][26];
+
+void init() {
+	memset(to, -1, sizeof(to));
+	sufflink[1] = sufflink[0] = 0;
+	len[0] = -1;
+	len[1] = 0;
+	numV = 2;
+}
+
+stack<int> xa;
+
+void pop() {
+	xa.pop();
+	v = xa.empty() ? 0 : xa.top();
+}
+
+void add(int idx) {
+	while (s[idx - len[v] - 1] != s[idx]) {
+		if (s[idx - len[sufflink[v]] - 1] != s[idx])
+			v = quicklink[v];
+		else
+			v = sufflink[v];
+	}
+	int u = sufflink[v];
+	while (s[idx - len[u] - 1] != s[idx]) {
+		if (s[idx - len[sufflink[u]] - 1] != s[idx])
+			u = quicklink[u];
+		else
+			u = sufflink[u];
+	}
+	int v_ = to[v][s[idx] - 'a'];
+	int u_ = to[u][s[idx] - 'a'];
+
+	if (v_ == -1) {
+		v_ = to[v][s[idx] - 'a'] = numV++;
+		len[v_] = len[v] + 2;
+		sufflink[v_] = len[v_] == 1 ? 1 : u_;
+
+		if (s[idx - len[sufflink[v_]]] == s[idx - len[sufflink[sufflink[v_]]]])
+			quicklink[v_] = quicklink[sufflink[v_]];
+		else
+			quicklink[v_] = sufflink[sufflink[v_]];
+	}
+	v = v_;
+	xa.push(v);
+}
+
+int d;
+bool mi(int idx) {
+	while (s[idx] <= 'z') {
+		add(idx);
+		if (len[v] < d)
+			return true;
+
+		pop();
+		s[idx]++;
+	}
+	return false;
+}
+
+int main() {
+#if _DEBUG
+	freopen("input.txt", "r", stdin);
+	freopen("output.txt", "w", stdout);
+#endif
+	cin >> d;
+	cin >> s;
+	s = '#' + s;
+	init();
+	int old;
+	bool more = false;
+
+	for (int i = 1; i < s.length(); i++) {
+		if (more) {
+			s[i] = 'a';
+			if (!mi(i)) {
+				cout << "Impossible";
+				return 0;
+			}
+			continue;
+		}
+
+		add(i);
+		if (len[v] >= d || (!more && (int)s.length() - 1 == i)) {
+
+			for (int j = i; j >= 1; j--) {
+				pop();
+				s[j]++;
+				if (mi(j)) {
+					more = true;
+					i = j;
+					break;
+				}
+			}
+
+			if (!more) {
+				cout << "Impossible";
+				return 0;
+			}
+		}
+
+	}
+	s.erase(0, 1);
+	cout << s << endl;
+	return 0;
+}
